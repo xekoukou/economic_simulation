@@ -1,6 +1,7 @@
-$(function() {
+$(document).ready(function() {
 
     var converter = new Markdown.Converter();
+    Markdown.Extra.init(converter,{"extensions": ["fenced_code_gfm"]});
 
     $(".markdown").each(function() {
             var md = $(this).text();
@@ -9,9 +10,7 @@ $(function() {
             $(this).append(html);
 
         })
-        //Create the Math formulas
-        //            MathJax.Hub.Typeset();
 
-
-
+        hljs.initHighlighting();
+        MathJax.Hub.Typeset();
 })

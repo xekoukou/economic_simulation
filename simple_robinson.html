@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Economic Simulation</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="d3.min.js"></script>
+<script src="Markdown.Converter.js"></script>
+<script src="Markdown.Extra.js"></script>
+<script src="sigma.min.js"></script>
+<script src="markdown.js"></script>
+<script src="sigma.layout.forceAtlas2.min.js"></script>
+<script src="jquery-2.1.4.min.js"></script>
+<script src="chart.js"></script>
+<script src="simulate.js"></script>
+<link rel="stylesheet" href="highlight/styles/default.css">
+<script src="highlight/highlight.pack.js"></script>
+<script src="MathJax-master/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+<script src="markdown.js"></script>
+<link rel="stylesheet" href="pure-min.css">
+<link rel="stylesheet" href="markdown.css">
+<link rel="stylesheet" href="chart.css">
+<script src="simple_barter.js"></script>
+</head>
+<body>
+    <div style="top:0px; left:0px; position:fixed; z-index: 10000;" >
+    <button class="pure-button pure-button-primary" onClick='simulation.start()'>start</button>
+    <button class="pure-button pure-button-primary" onClick='simulation.continue()'>continue</button>
+    <button class="pure-button pure-button-primary" onClick='simulation.stop()'>stop</button>
+    <button class="pure-button pure-button-primary" onClick='simulation.reset()'>reset</button>
+    </div> 
+    <div style = "font-size:120%">
+       <div class="markdown">
+_
+
+# Simple Robinson Model
+
+
+This model consists of a single person. He lives alone in the wilderness. He has to build his own tools and catch his own meal. There is no money. There is no trade. There is no cooperation. How can we model the economy of a single person? 
+
+We need to model the choices that robisnson makes with regard to the labor he puts and the products he creates. 
+Does he save goods for the winter? Does he make tools? Any attempt to do that would require us to model the person Robinson. 
+But there is no theory we can use to simulate the human person's choices nor his change of habits due to external factors.
+What we will do is use a simple model about the person and then try to prove that any other model of the person would have the same results.
+In order to allow other models to replace our model, we will have a specific api that all models would need to implement. Each model will have to decide on which choices the person takes.
+
+We will assume that a person has specific wants that are common among all people like food, clothing etc. and whose value do not change very much. There are also wants that are specific to each person and whose value can change a lot or not depending on the person. Of course, we have to take the assumption that the wants do not change based on previous experiences.
+In other words, the fact that you didn't eat food yesterday doesn't make you hungrier today. Whether that invalidates our results is an interesting question to find.
+
+Similarly, we will assume that the person cannot predict what he will want in the future. He can only project his wants of today into the future. Thus that person will not undertand that when he gets very old, he would need to have someone to take care of him. Of course, in Robinson's case, that is not possible.
+
+These wants determine the choices of Robinson.
+
+* if \\[W_{a} < W_{b}\\] then R chooses b.
+* if \\[W_{a} + W_{b} > W_{c}\\] then R chooses a.
+
+In order to simulate this, we will use the Gaussian distribution.
+$$ f : R \rightarrow R $$
+$$f(x) = \frac{1}{\sigma\sqrt{2\pi}}e^{\frac{-(x-\mu)^{2}}{2\sigma^{2}}}$$
+
+```javascript
+
+function Guassian(sigma_, median_) {
+  this.sigma = sigma_;
+  this.median = median_;
+  this.const = 1/(sigma * Math.sqrt(2 * Mapth.PI));
+  this.exp_const = -1/(2 * sigma * sigma);
+
+  this.at = function(x) {
+    return this.const * Math.exp(this.exp_const * (x - this.median) * (x - this.median));
+  }
+
+  this.max = this.at(0);
+}
+```
+
+We will not generate each person with the same wants. We will randomly generate wants but the median will follow the guassian distribution. From a technical point of view, robinson will not know he wants something until he finds it.
+
+```javascript
+
+Person.prototype.new_want = function(id,gaussian) {
+  this.wants[id] = gaussian.at(id) * Math.rand();
+}
+
+```
+
+The change of preferences will be simulated by this function. The magnitude constant gives us the choice to determine the global magnitude of change of preferences.
+
+```javascript
+
+Person.prototype.change_wants = function(magnitude,gaussian) {
+  Object.keys(this.wants).forEach(function(id){
+    this.wants[id] += magnitude * (2 * Math.rand() - 1) * (guassian.max - (gaussian.at(id))/guassian.max);
+  });
+}
+
+```
+
+At the same time that a person has specific wants, he also has a preference in types of work. We generate this the same way we generated the wants but this time we do not have a gaussian distribution, only a uniform distribution.
+
+```javascript
+Person.prototype.new_task = function(id) {
+  this.tasks[id] = Math.rand();
+}
+```
+
+```javascript
+Person.prototype.change_tasks = function(magnitude) {
+  Object.keys(this.tasks).forEach(function(id){
+    this.tasks[id] += magnitude * (2 * Math.rand() - 1);
+  });
+}
+```
+
+We wouldn't have wants if there weren't products that fulfilled those wants. If there weren't, then we would simulate futility rather than the economy.
+
+A product thus fulfills specific wants. We specify the percentage of fulfillment that a product provides to a specific want. 1 or 100% means that it has been completely fulfilled.
+
+In order to generate the fulfilled_wants randomly, we need to know the maximum number of wants that our system will have.
+
+```javascript
+var max_wants = 1000;
+var max_product_wants = 5;
+
+function Product(id,max_wants, max_product_wants, magnitude){
+  this.fulfilled_wants = {};
+
+  var number_of_wants = Math.floor(Math.random() * 5 + 1);
+  for(var i = 0; i < number_of_wants; i++) {
+    while(true) {
+      var id = Math.random() * 1000;
+      if (!(id in this.fulfilled_wants)){
+        this.fulfilled_wants[id] = magnitude * Math.random();
+        break;
+      }
+    }
+  }
+}
+```
+
+A product certainly doesn't exist unless you pick it or create it. Thus there is a production process that might require tools to perform or not. How do the production processes emerge? Research.
+Thus one would have to model **research**. 
+
+## Research
+
+Research and knowledge is one of the fundamental properties of human society. It distinguishes us from other animals. We have the ability to learn new methods and build new tools that helps us in the production of goods necessary for our survival. Thus there can be no model of an economy without incorporating the process of research in it.
+
+In order to model research, we need to abstract the process of research. We will not know the content of the research. But the content of the research plays an important role in the economy. Let us have an example. A bakery has a bread recipe. If it researchs new knowledge based on the bread recipe, it should be almost impossible to find a way to manufacture bicycles. Why do we have to avoid this in our abstract model? Because then we loose one important characteristic of knowledge/research that influences the economy. Economic agents that have relevant knowledge are much more likey to learn new related knowledge.
+
+Thus we need to abstractly identify the relative similarity of different knowledges. By quanitifying the similarity of knowledge we can then provide a formula that describes the similarity of products produced by those researches.
+
+The second property of research is that the more knowledge one receives on a certain topic, the more difficult it is to learn new things. This will allow us to provide a formula that determines the probability that a new research will succeed or not.
+
+At the same time, it is not only the previous knowledge the only factor that determine research. Research tools are also required. Tools are randomly generated but the probability of creating a new tool is relatively very low compared to improving an existing tool. In other words, tool creation for research is determined by the same rules like any other product.
+
+Let us put those ideas into a more formal language.
+
+* A unit of knowledge \\(K\\) depends on a set of previous knowledge units \\(dep_{K}=\\{i=1..n|K_{i}\\}\\).
+We say that \\(K\\) depends on \\(K_{i}\\) for its research and we write \\[K_{i} \xrightarrow{dep} K \\].
+* We say that \\(K_{a}\\) is an ancestor of \\(K\\) if there is a directed path from \\(K_{a}\\) to \\(K\\) in the graph of Knowledge dependencies.
+
+Research is performed in 2 ways.
+
+1. It is performed either for the improvement or specialization of a specific knowledge unit.
+
+In this case, all the dependencies are part of the same general field of research.
+
+* \\( \exists K_{c} \in dep_{K}\\) such that \\(\forall K_{i} \in dep_{K}\\) \\(K_{i}\\) is an ancestor of \\(K_{c} \\)
+
+Research is performed on \\(K_{c}\\).
+
+* We say that the new knowledge is a specialization of the previous knowledge and we write \\[K_{c} \xrightarrow{spec} K  \\].
+* We say that the new knowledge is an improvement of the previous knowledge and we write \\[K_{i} \xrightarrow{impr} K  \\].
+
+Keep in mind that an improvement can happen on any \\(K_{i}\\).
+
+2. Knowledge is performed on a number of dinstict fields of knowledge.
+
+* We say that the new knowledge is derieved from multiple knowledge and is a new dinstinct field, we write \\[K_{i} \xrightarrow{dist} K  \\].
+
+The relevant code follows:
+
+```
+
+```
+
+
+Now that we have defined the graph of knowledge dependencies and types of knowledge expansion, we can use the properties of this abstract graph to define the probability of a research succeeding as well as its results.
+
+-------
+
+At the same time, an improvement on previous knowledge can lead to improvements on the dependent knowledges.
+
+* Each knowledge has a probability of producing new knowledge that depends on its position in the graph of knowledge dependencies. 
+
+* There can be no relation between the tools needed and the knowledge dependencies except from the fact that of tools were usefull to research some knowledge they will still be usefull for improved knowledge.
+Other than that, the knowledge required to build a tool is independent of its research use. But in order to build a new tool out of some random knowledge for a specific research is very very low.
+This is also true for products.
+
+* Creating a dist field is more probable if dependent multiple knowledges have more similarity.
+
+Therd are 2 cases. The improvement is on the technology we are researching or on a more fundamental theory that this research depends on.
+There are 2 cases. Development of a product or of a technology.
+
+Research has 2 processes. First, we merge dinstict knowledge sectors to create a product or a new knowledege sector. Secondly, we use the knowledge of previous merges as a research accelerator.
+
+We witness 2 important processes in real life. 
+Previous knowledge can accelerate the research of a similar but better product. Research at the same time can lead to unexpected results that create new products that are not related to the previous ones.
+It is certain that previous knowledge accelerates research in both cases. What would be the dependencies of the new knowledge on the previous knowledge? Are there multiple research paths on the improvement of the same product with the same previous knowledge?
+
+We model knowledge this way. Any previous knowledge can lead to new knowledge but the difficulty of getting new knowledge increases as we extract new knowledge. That is consistent with reality. It can explain why patents block other enterprises from researching similar things. Also, as we learn new things, our new knowledge doesn't give us a lower probability to learn new things. New knowledge is more difficult to learn.
+
+```
+function Production_process(id) {
+this.
+}
+```
+
+```javascript
+
+function Person {
+  this.wants = {};
+
+}
+```
+
+
+
+
+
+
+
+
+
+       </div>
+    </div>
+</body>
+</html>

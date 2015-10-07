@@ -1,79 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Simulation</title>
+<title>Economic Simulation</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <script src="d3.min.js"></script>
-<script src="Markdown.Converter.min.js"></script>
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/styles/default.min.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.8.0/highlight.min.js"></script>
-
+<script src="Markdown.Converter.js"></script>
+<script src="Markdown.Extra.js"></script>
 <script src="sigma.min.js"></script>
+<script src="markdown.js"></script>
 <script src="sigma.layout.forceAtlas2.min.js"></script>
 <script src="jquery-2.1.4.min.js"></script>
 <script src="chart.js"></script>
 <script src="simulate.js"></script>
-<script src="equations.js"></script>
+<script src="simple_barter.js"></script>
 <script src="markdown.js"></script>
 <link rel="stylesheet" href="pure-min.css">
+<link rel="stylesheet" href="markdown.css">
 <link rel="stylesheet" href="chart.css">
-<script>
-$(document).ready(function() {
-      $('.markdown code').each(function(i, block) {
-              hljs.highlightBlock(block);
-                });
-});
-
-</script>
 </head>
 <body>
-    <h1>Economic Simulation</h1>
-    <div style="top:0px; left:0px; position:fixed;">
-    <button onClick='simulate.start()'>start</button>
-    <button onClick='simulate.continue()'>continue</button>
-    <button onClick='simulate.stop()'>stop</button>
-    <button onClick='simulate.reset()'>reset</button>
-    </div> 
-    <div>
-        <p class="markdown">
+       <div style = "font-size:120%">
+       <div class="markdown">
+_
 
-# Person
+# Economic Simulation
 
+## Summary
 
+In this article, we will build a model of the economy and simulate it. Then we will try to understand the results and whether they reflect reality or not. Then we will expand the model to include the new modes of production that arise due to the internet. We will try to find out how they change the economy.
+Specifically, I would like to model the Open Value Network model and the ryaki model embedded in the capitalist economy.
 
-# Commodity
+## Method of modeling and rules on the interpretation of the results
 
-A *commodity* is a product that is sold in the market place in exchange for money.
+When a simulation is performed it is important to understand the model determines the results of the simulation. Thus if someone wanted to have specific results, all it had to do was change the model so as to receive those results. In other words, apart from the simulation itself and its results, it is important to point beforehand that the results describe the model and not reality. 
 
-A commodity has a *number of uses* and an *expiration date*.
+Consider those 2 logical statements:
 
-# Fixed Capital
+* Animals use photosynthesis to acquire energy.
+* Humans are animals.
+* Result: Humans use photosynthesis to acquire energy.
 
-Fixed Capital are the tools that are used in the production process to create products.
+The simulation helps extract information about the model and that helps understand its internal logic, dynamics. It helps us find causational relations between its properties. But if the model does not reflect reality, the results will not too. Given that all models are abstractions of reality, it is very important to notice whether the details we omited do affect the results of the simulation.
 
-Each type of Fixed capital has a *production function*.
+In this model, we will explicitely point to the details we omit. We will point to simplifications we make and ask everyone to contribute to provide more complex models.
 
-## Production function
+## Theory
 
-The production function is the function that determines the output of a production process with the use of specific Manufacturing tools and personnel.
+### Economic Agent 
 
-```
-int y = 0;
-```
+Any microeconomic model of the economy needs to define the agents of the model. We define an **economic agent** to be an entity that makes decisions that affect the economy. That forces us to define what the economy is. The **economy** is defined as all the processes in which humans labor to produce use-value and distribute it among themselves. **Labor** is the process of purposefully exert oneself, spending effort. **Use value** is the general term that expresses the increase in happiness that one or more people receive with the use of an item or service. The **environment** is the material basis in which all economic processes take place.
 
-        </p>
+Such a definition of an **economic agent** is very broad. Economic agents are the robots of a factory according to [artificial intelligence.](https://en.wikipedia.org/wiki/Intelligent_agent). Any **group** of people that take decisions and act together is also an economic agent. The most prominent type of such an agent is the **firm**. But even the firm is not exactly a single group of people. From the one point we have the legal form of the firm. We have the internal organization of the firm but we also have the group of the shareholders. Thus we cannot model the firm simply by representing it as a homogenous group. There are relations that need to be expressed in order to simulate the behavior of the firm.
 
-    <div class="chart" id="test_id">
-    </div> 
-        <p class="markdown">
-This is the population. Since there are no deaths and all married can have children, the function is exponential.
-        </p>
-    <div class="chart" id="test_id2">
-    </div>
-        <p class="markdown"> This chart shows the population of the young people. At first the young people are almost zero.
-    </p>
-    <div class="graph" id="graph_id">
-    </div>
+#### Supportive Agent
+
+One type of an economic agent is the **supportive agent**. A **supportive agent** is any entity whose decisions and actions do not directly produce use value, but affects others that do.
+
+The legal system of a country and the police play such a role. Many other professions have such a responsibility. It is important to acknowledge them.
+
+### Technology
+
+**Technology** is the knowledge of how to produce use value, how to transform materials from the environment into useful things. 
+The knowledge is not independent of its holder. 
+A person retains knowledge in his memory. Libraries and information systems store knowledge as well. 
+That information can either be public or private. 
+A firm's trade secrets and patents are protected by law. 
+Knowledge can be shared or kept secret. Moreover, knowledge has production mechanisms. 
+It requires tools, human labor and previous knowledge to produce it.
+Thus, when one models the economy, he should not only take into account the knowledge of the era but the entity that holds it, its production and propagation mechanisms.
+
+### Tools
+
+**Tools** are material or immaterial objects that are used more than once in the production process. It is important to note that there is a big difference between knowing how to build something and actually building it. The difference is that it requires human labor and tools other than the ones spent to learn how to build it.
+
+## Models
+
+In the next pages, we will model the economy starting from the most simple model to the most complex one.
+
+[next](simple_robinson.html)
+
+       </div>
     </div>
 </body>
 </html>
