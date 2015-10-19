@@ -27,7 +27,7 @@
     <button class="pure-button pure-button-primary" onClick='simulation.continue()'>continue</button>
     <button class="pure-button pure-button-primary" onClick='simulation.stop()'>stop</button>
     <button class="pure-button pure-button-primary" onClick='simulation.reset()'>reset</button>
-    </div> 
+    </div>
     <div style = "font-size:120%">
        <div class="markdown">
 _
@@ -95,18 +95,18 @@ Person.prototype.change_wants = function(magnitude,gaussian) {
 
 ```
 
-At the same time that a person has specific wants, he also has a preference in types of work. We generate this the same way we generated the wants but this time we do not have a gaussian distribution, only a uniform distribution.
+At the same time that a person has specific wants, he also has a preference in types of work. We generate this the same way we generated the wants but this time we do not have a gaussian distribution, only a uniform distribution. (A task can be either production or research.)
 
 ```javascript
-Person.prototype.new_task = function(id) {
-  this.tasks[id] = Math.rand();
+Person.prototype.new_task_preference = function(id) {
+  this.task_preferences[id] = Math.rand();
 }
 ```
 
 ```javascript
-Person.prototype.change_tasks = function(magnitude) {
-  Object.keys(this.tasks).forEach(function(id){
-    this.tasks[id] += magnitude * (2 * Math.rand() - 1);
+Person.prototype.change_task_preferences = function(magnitude) {
+  Object.keys(this.task_preferences).forEach(function(id){
+    this.task_preferences[id] += magnitude * (2 * Math.rand() - 1);
   });
 }
 ```
@@ -137,12 +137,105 @@ function Product(id,max_wants, max_product_wants, magnitude){
 }
 ```
 
-A product certainly doesn't exist unless you pick it or create it. Thus there is a production process that might require tools to perform or not. How do the production processes emerge? Research.
+A product certainly doesn't exist unless you pick it or create it. Thus there is a production process that might require tools to perform or not. How can we model production?
+
+## Production process
+
+There is one fundamental property of production. Humans create tools to help them in the production process.
+ We will discuss the research process in the next section but we need 
+to use that property so as to model the production process.
+Thus first of all, production exists that doesn't create human goods but tools.
+ Secondly production itself has as inputs both tools and human labor/materials.
+
+Materials can be either raw ones extracted from nature or parts produced in other production plants.
+Thus another property is that the production process can be split into multiple ones in which only the last one assemples the final product.
+
+The production process can be defined as a function that takes the above as input and generate a specific product at a specific volume.
+
+\\[P:TxLxM \rightarrow P\\]
+\\This function is informal. Fix it TODO.
+
+The main problem for defining a general production process is that the sum of 
+its parts does not determine the  whole production process. The way that the process 
+is performed cannot be deduced by the people that take part or the tools.
+ We could add the organization structure as a factor of productivity.
+ Since we cannot meaususe or specify in a general manner the interelations 
+of the workers and their effect on productivitym we will have to do the
+ above simplicication. In order to account for that simplification,
+ we will introduce a productivity multiplication factor that will 
+be generated with a gaussian distribution of small varriance for
+ every group of workers on a specific production process.
+
+Having introduced the above multiplier we can now model the production process as the weighted sum of the productivity of the working force mutiplied by the tool that is used.
+
+Let us note that we can consider that each tool identifies uniquely a specific production process.
+Other tools will be used for different production processes. The only exception is when a tool is an improvement of another tool. Then they share the production process, they only have a different multiplier.
+
+A tool can be used for either production or for research purposes. We will define the research process in following sections. A tool obtains its properties during research.
+
+```javascript
+function Tool() {
+  this.id;
+//for research or production
+  this.type;
+  this.multiplier;
+  this.process;
+}
+```
+
+Each person also needs to define its productivity with regard to a specific production process.
+Here again we use a uniform distribution. In general when a person learns of a new task/production_process, it imediatelly knows both its preference to it as well as his productivity, thus our introduction of a helper function.
+
+```javascript
+Person.prototype.new_task_productivity = function(task_id,number_of_different_positions) {
+  var multi = [];
+  for( var i = 0; i < number_of_different_positions; i++) {
+    multi.push(Math.rand);
+  }
+  this.new_task_productivities[task_id] = multi;
+}
+
+Person.prototype.new_task = function(task_id,number_of_different_positions) {
+  this.new_task_preference(task_id);
+  this.new_task_productivity(task_id,number_of_different_positions);
+}
+```
+
+\\TODO We have used a uniform distribution. In the next chapter, we will introduce a function that determines the similarity of different knowledge units. This could allow us to determine productivity based on the productivy on similar tasks.
+
+Now we are ready to define the production process. We define the output out of a single day of production.
+
+```javascript
+Production_process.prototype.output(workers,tool) {
+  var result = 0;
+  var self = this;
+  self.position_weights.forEach(function(weight,index) {
+    for(var i = 0; i < self.number_of_workers_in_position[index]; i++) {
+      result += weight * workers[index][i].task_productivities[self.id][index];
+    }
+  });
+  return tool.multiplier * (result/self.weights_sum);
+}
+
+function Production_process() {
+  this.id;
+  this.position_weights = [];
+  this.number_of_workers_in_position = [];
+  this.weights_sum;
+  this.product_type;
+  this.product_id;
+
+ //Here we need to generate the above values. we need to look at research to do so. 
+
+}
+```
+
+How do the production processes emerge? Research.
 Thus one would have to model **research**. 
 
 ## Research
 
-Research and knowledge is one of the fundamental properties of human society. It distinguishes us from other animals. We have the ability to learn new methods and build new tools that helps us in the production of goods necessary for our survival. Thus there can be no model of an economy without incorporating the process of research in it.
+Research and knowledge is one of the fundamental property of human society. It distinguishes us from other animals. We have the ability to learn new methods and build new tools that helps us in the production of goods necessary for our survival. Thus there can be no model of an economy without incorporating the process of research in it.
 
 In order to model research, we need to abstract the process of research. We will not know the content of the research. But the content of the research plays an important role in the economy. Let us have an example. A bakery has a bread recipe. If it researchs new knowledge based on the bread recipe, it should be almost impossible to find a way to manufacture bicycles. Why do we have to avoid this in our abstract model? Because then we loose one important characteristic of knowledge/research that influences the economy. Economic agents that have relevant knowledge are much more likey to learn new related knowledge.
 
@@ -162,26 +255,73 @@ Research is performed in 2 ways.
 
 1. It is performed either for the improvement or specialization of a specific knowledge unit.
 
-In this case, all the dependencies are part of the same general field of research.
-
-* \\( \exists K_{c} \in dep_{K}\\) such that \\(\forall K_{i} \in dep_{K}\\) \\(K_{i}\\) is an ancestor of \\(K_{c} \\)
-
-Research is performed on \\(K_{c}\\).
+In this case, the only dependency is the specific knowledge unit.
 
 * We say that the new knowledge is a specialization of the previous knowledge and we write \\[K_{c} \xrightarrow{spec} K  \\].
 * We say that the new knowledge is an improvement of the previous knowledge and we write \\[K_{i} \xrightarrow{impr} K  \\].
 
-Keep in mind that an improvement can happen on any \\(K_{i}\\).
+2. Research is performed on a number of dinstict fields so as to create a new field.
 
-2. Knowledge is performed on a number of dinstict fields of knowledge.
+* We say that the new knowledge is derived from multiple knowledges and is a new dinstinct field, we write \\[K_{i} \xrightarrow{sum} K  \\].
 
-* We say that the new knowledge is derieved from multiple knowledge and is a new dinstinct field, we write \\[K_{i} \xrightarrow{dist} K  \\].
+//Check The more similar those knowledge fields are , the more probable it is to produce new knowledge.
+
+### Research types and the effect on the new production processes and their products.
+
+The relation of the production processes and products that the new knowledge introduces depends on the type of research performed. For impovement of previous knowledge, the products fulfill similar needs as the knowledge they depend on.
+
+For specialization or summing of knowledge(s) there is no relation to the fulfilled needs of the new products with those of the ancestor knowledge(s). The production processes though have similarities since they are similar technologies. Thus there is a relation of the productivity of the workers on the new production processes with the olds ones.
+
+Thus from an economic point of view, one would specialize on the field of research with the higher porbability or because the working force has good productivity on this production sector. The same applies for summing different knowledges.
+
+//Clean or remove this. We have already pointed about it before. (similarity of distinct knowledges, is this true by the way?)
+It is important to view the creation of a distinct field of knowledge from multiple ones in this context. As an effort to increase the probability of success. There should be though a multiplying factor in this case. Certainly picking random fields of knowledge and trying to mix them should have less probability due to that randomness.
+
+
+Now that we have defined the graph of knowledge dependencies and types of knowledge expansion, we can use the properties of this abstract graph to define the probability of a research succeeding as well as its results.
+
 
 The relevant code follows:
 
+```javascript
+function Knowledge() {
+  this.id;
+  this.type;
+//many only when we sum different knowledges.
+  this.knowledge_dependencies = {};
+  this.tool_dependencies = {};
+  this.new_production_processes = {};
+//the production processes contain the information about which products this technology enables.
+}
+
+Research_process.prototype.output(workers,tools) {
+  var result = 0;
+  var self = this;
+  self.position_weights.forEach(function(weight,index) {
+    for(var i = 0; i < self.number_of_workers_in_position[index]; i++) {
+      result += weight * workers[index][i].task_productivities[self.id][index];
+    }
+  });
+  return tool.multiplier * (result/self.weights_sum);
+}
+
+function Research_process() {
+  this.id;
+  this.position_weights = [];
+  this.number_of_workers_in_position = [];
+  this.weights_sum;
+  this.product_type;
+  this.product_id;
+
+ //Here we need to generate the above values. we need to look at research to do so. 
+
+}
+
+function research_impr(ancestor, dependencies, tools) {
+  
+}
 ```
 
-```
 
 
 Now that we have defined the graph of knowledge dependencies and types of knowledge expansion, we can use the properties of this abstract graph to define the probability of a research succeeding as well as its results.
@@ -211,7 +351,7 @@ We model knowledge this way. Any previous knowledge can lead to new knowledge bu
 
 ```
 function Production_process(id) {
-this.
+this.id;
 }
 ```
 
