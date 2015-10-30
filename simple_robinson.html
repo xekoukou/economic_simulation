@@ -139,9 +139,10 @@ A product thus fulfills specific wants. We specify the percentage of fulfillment
 
 ```javascript
 var total_wants = 100000;
+var max_product_fulfilled_wants = 10;
 var wants_gauss_median = 50000;
 
-Consumer_product.prototype.new_random_fulfilled_want = function( id, max_wants, magnitude){
+Consumer_product.prototype.new_random_fulfilled_want = function(max_wants, magnitude){
   while(true) {
     var id = Math.random() * max_wants;
     if (!(id in this.fulfilled_wants)){
@@ -149,6 +150,13 @@ Consumer_product.prototype.new_random_fulfilled_want = function( id, max_wants, 
       break;
     }
   }
+}
+
+function Consumer_product() {
+  this.id;
+  this.unique_id;
+  this.fulfilled_wants = {};
+  this.production_cost;
 }
 ```
 
@@ -190,8 +198,11 @@ The tool identifies uniquely the production/research process that is using it.
 ```javascript
 function Tool() {
   this.id;
-  this.multiplier;
+  this.unique_id;
+  this.average_multiplier;
   this.process;
+  this.discovered_by;
+  this.production_cost;
 }
 ```
 
@@ -202,7 +213,7 @@ Here again we use a uniform distribution. In general when a person learns of a n
 Person.prototype.new_task_productivity = function(task_id,number_of_different_positions) {
   var multi = [];
   for( var i = 0; i < number_of_different_positions; i++) {
-    multi.push(Math.rand);
+    multi.push(Math.random());
   }
   this.new_task_productivities[task_id] = multi;
 }
@@ -226,14 +237,17 @@ Process.prototype.output(workers,tool) {
       result += weight * workers[index][i].task_productivities[self.id][index];
     }
   });
-  return tool.multiplier * (result/self.weights_sum);
+  return this.number_of_workers * tool.average_multiplier * (result/self.weights_sum);
 }
 
 function Process() {
-  this.id;
+  this.unique_id;
+  this.number_of_workers;
   this.position_weights = [];
   this.number_of_workers_in_position = [];
   this.weights_sum;
+  this.type;
+//type can be product consumer_product_part, consumer_product, tool_part, tool, knowledge_part, knowledge.
   this.product_id;
 
  //Here we need to generate the above values. we need to look at research to do so. 
@@ -263,9 +277,13 @@ one important characteristic of knowledge/research that influences the
 economy. Economic agents that have relevant knowledge are much more likely 
 to learn new related knowledge.
 
-Thus we need to abstractly identify the relative similarity of different knowledges. By quanitifying the similarity of knowledge we can then provide a formula that describes the similarity of products produced by those researches.
+Thus we need to abstractly identify the relative similarity of different knowledges. 
+By quanitifying the similarity of knowledge we can then provide a formula that describes 
+the similarity of products produced by those researches.
 
-The second property of research is that the more knowledge one receives on a certain topic, the more difficult it is to learn new things. This will allow us to provide a formula that determines the probability that a new research will succeed or not.
+The second property of research is that the more knowledge one receives on a certain topic, 
+the more difficult it is to learn new things. This will allow us to provide a formula that 
+determines the probability that a new research will succeed or not.
 
 //Todo should I remove that?
 At the same time, it is not only the previous knowledge the only factor that determine research. Research tools are also required. Tools are randomly generated but the probability of creating a new tool is relatively very low compared to improving an existing tool. In other words, tool creation for research is determined by the same rules like any other product.
@@ -291,11 +309,146 @@ In this case, the only dependency is the specific knowledge unit.
 
 # Research Success probability based on graph of dependencies.
 
-For this second type of research, it is impossible to know whether a number of knowledges can be used together to produce a new field without knowing the content of the knowledges. In order to simulate this possibility we will randomize that possibility. Whenever a new knowledge becomes known, we will generate the sets that it can be used with.
+For the second type of research, it is impossible to know whether a number of knowledges can be used together to produce a new field without knowing the content of the knowledges. In order to simulate this possibility we will randomize that possibility. Whenever a new knowledge becomes known, we will generate the sets that it can be used with.
 
-But what does it mean to use all these knowledges/technologies to create new products/tools. It means that we specialize on all of them in such a way that all of them create he final product.
+But what does it mean to use all these knowledges/technologies to create new products/tools. 
+It means that we specialize on all of them in such a way that all of them create the final product.
 
 Thus the probability of success can be no other than the multiplication of the atomic specialization probabbilities.
+
+What remains is to specify the probability of specialization/improvement  
+of a specific technology. 
+As we have said previously, we need to decrease the probability of new research 
+if the research community has already found knowledge in a specific sector.
+Thus the probability of improvement upon a specific sector reduces.
+
+The Probability distribution that we will use is not derived empirically but it passes our requirements.
+
+\\[\frac{1}{n^2}\\]
+
+When we improve the knowledge of a specific sector, the direct dependant technologies improve their probabilities. we use the sum to specify the multiplier that will be used in their probability.
+
+\\[\sum{\frac{1}{n^2}}\\]
+
+On the specialization probability:
+
+When we perform specialization two things happen. First we reduce the subject of inquiry to a small field. That decreases the work one needs to do for research. Secondly, it reduces the possible technological outcomes of the research. We cannot know the results of the research but we do know that the possible outcomes are fewer. Thus the probability of finding a usefull product reduces, thus one needs to do more research to find a usefull product.
+
+On generalization:
+
+When we research a certain sector, one can stumble on a specific problem that leads to an improvement to the general theory. The probability diminshes the more general a theory we depend on, i other words the more hops in our ancestor tree we look to.
+
+it is time to write the code:
+
+```javascript
+
+Consumer_product.prototype.new_improved_consumer_product = function(consumer_products_array, cp_impr_magnitude, cp_change_cost_magnitude) {
+  var impr_product = new Consumer_product();
+  impr_product.unique_id = this.unique_id;
+  impr_product.id = consumer_products_array[this.unique_id].length;
+  for(f_want in this.fulfilled_wants) {
+    impr_product.fulfilled_wants[f_want] = this.fulfilled_wants[f_want] + cp_impr_magnitude * Math.random();
+    impr_product.production_cost = Math.max(0.0001,this.production_cost + (cp_change_cost_magnitude* (2 * Math.random() - 1 ))/(this.production_cost) );
+  }
+
+  consumer_products_array[this.unique_id].push(impr_product);
+  return impr_product.id;
+}
+
+Tool.prototype.new_improved_tool = function(knowledge_ids,tools_array, t_impr_magnitude, t_change_cost_magnitude) {
+  var impr_tool = new Tool();
+  impr_tool.unique_id = this.unique_id;
+  impr_tool.id = tools_array[this.unique_id].length;
+  impr_tool.average_multiplier = this.average_multiplier + t_impr_magnitude * Math.random();
+  impr_tool.production_cost = this.production_cost + (t_change_cost_magnitude * (2 * Math.random() - 1 ))/this.production_cost;
+  impr_tool.process = this.process;
+  impr_tool.discovered_by = knowledge_ids;
+
+  tools_array[this.unique_id].push(impr_tool);
+  return impr_tool.id;
+}
+
+
+function Knowledge() {
+  this.id;
+  this.unique_id;
+
+  this.dependencies={};
+//The sets of tools is used to specify the tools that can be used to research or improve this knowledge. Any of those tools would do.
+//Each set is expressed as the ordered set of ids joined with the '_'.
+  this.sets_of_tools={};
+  this.new_tools = {};
+//For the new products and new tools, the research tools will be used to produce them at first before much better procedures are found.
+  this.new_consumer_products = {};
+  this.improvement_level = 0;
+  this.descendants = {};
+//Here we also have the probabilities of merges of different sectors into a new field.
+  this.possible_new_descendands = {};
+}
+
+Research.prototype.new_knowledge(knowledge, type) {
+  switch (type) {
+    case "improvement":
+      this.new_knowledge_improvement(knowledge);
+      break;
+    case "specialization":
+      this.new_knowledge_specialization(knowledge);
+      break;
+  }
+}
+
+Research.prototype.new_knowledge_improvement = function(knowledges_array, t_impr_magnitude, t_change_cost_magnitude, cp_impr_magnitude, cp_change_cost_magnitude, consumer_products_array, tools_array) {
+
+  var new_knowledge = new Knowledge();
+  new_knowledge.unique_id = this.unique_id; 
+  new_knowledge.id = knowledges_array[this.unique_id].length;
+
+  for( dep in this.dependencies) {
+    new_knowledge.dependencies[dep] = true;
+  }
+
+  for( set in this.sets_of_tools) {
+    new_knowledge.sets_of_tools[set] = true;
+  }
+
+  for( tool_ids in this.new_tools) {
+  var tool = tools_array[tool_ids.unique_id,tool_ids.id];
+  var impr_tool_id = tool.new_improved_tool({"id":new_knowledge.id,"unique_id":new_knowledge.unique_id},tools_array,t_impr_magnitude, t_change_cost_magnitude); 
+    new_knowledge.new_tools[impr_tool_id] = true;
+  }
+
+  for( product_ids in this.new_consumer_products) {
+    var product = consumer_products_array[product_ids.unique_id][product_ids.id];
+    var impr_product_id = product.new_improved_consumer_product(consumer_products_array, cp_impr_magnitude,cp_change_cost_magnitude);
+    new_knowledge.new_consumer_products({"id":impr_product_id,"unique_id":product_ids.unique_id}) = true;
+  }
+
+  new_knowledge.improvement_level = this.improvement_level + 1;
+
+  for( descendant in this.descendants) {
+    new_knowledge.descendants[descendant] = true;
+  }
+
+  for( descendant in this.possible_new_descendants) {
+    new_knowledge.possible_new_descendants[descendant] = true;
+  }
+  
+  knowledges_array[this.unique_id].push(new_knowledge);
+  return new_knowledge.id;
+}
+
+
+Research.prototype.new_knowledge_specialization = function(knowledge) {
+  
+}
+Research.prototype.possible_knowledge_generalization = function(knowledge) {
+  
+}
+
+```
+
+
+
 
 ### Research types and the effect on the new production processes and their products.
 

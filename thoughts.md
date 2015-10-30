@@ -87,3 +87,57 @@ We have learned a specific knowledge with the use of specific research tools. We
 Improved tools can have a different production process.
 
 They need though to build a product that is superior or they are cheaper to build or the new production process is cheaper.
+
+----------------------------------------------------
+
+The main problem with defining the probability of success of a research.
+
+
+Research ---impr---> research
+p_1                    p_1+something
+
+
+Sum 1/n^2  converges.
+
+Specialization is different than improvement. We use the same tools as when doing an improvement of the technology but the knowledge is specific to a specific sector.
+
+Since we want to specialize only on a specific part of the knowledge, the probability increases because the field is smaller. What is the field of research of a specialization?
+
+Randomly generating it. There can be no relation to the results of the specialization and the size of the specialization. The results are randomly generated as well.
+
+
+
+----------------------------------------------------------------
+
+When we perform specialization two things happen. First we reduce the subject of inquiry to a small field. That decreases the work one needs to do for research. Secondly, it reduces the possible technological outcomes of the research. We cannot know the results of the research but we do know that the possible outcomes are fewer. Thus the probability of finding a usefull product reduces, thus one needs to do more research to find a usefull product.
+
+When we perform specialization the level of improvement on the general knowledge plays an important role on the probability of the specialization in succeding. That is only true for direct relations.
+
+
+---------------------------------------
+
+
+In the sets of possible new knowledge merges, we need to simulate the possibility of a new merge being an improvement to a current knowledge/technology.
+
+Thus merges do not only happen in specialization but also as a process of improving a specific product.
+
+Can this be called an improvement or not?
+
+Yes it can. There are 2 possible ways one can merge a new technology. 
+
+a) Replace a previous one with this one. The product part is replaced with the part of the new technology. All other parts remain the same as well as the tools that are required to build them.
+Of course, some changes will happen to them to incorporate the new technology.
+
+b) An added part is added that increases the functionality of the product. As before, some changes to the other parts need to be made to incoprorate the tool.
+
+
+------------------------------------------------------
+
+Should we allow the production cost to increase in an improvement?
+
+
+------------------------------------------------------------------
+
+The productivity of wworkers on improved tools should be very similar to the one with the previous tool. If there are fewer positions in the new tool, those positions are no longer needed in the new tool. Thus those workers will not be able to use their good productivity in the new tool. 
+
+In reality , improved tools might require different positions than the ones from the previous tool. How should we simulate this?
