@@ -35,18 +35,95 @@ _
 # Simple Robinson Model
 
 
-This model consists of a single person. He lives alone in the wilderness. He has to build his own tools and catch his own meal. There is no money. There is no trade. There is no cooperation. How can we model the economy of a single person? 
+This model consists of a single person. He lives alone in the wilderness. He has to build his own tools and catch his own meal. There is no money. There is no trade. There is no cooperation. How can we model the economy of a single person?
 
-We need to model the choices that robisnson makes with regard to the labor he puts and the products he creates. 
-Does he save goods for the winter? Does he make tools? Any attempt to do that would require us to model the person Robinson. 
-But there is no theory we can use to simulate the human person's choices nor his change of habits due to external factors.
+This might look simple but it is not. Even if we have a single person economy, we will need to model the interaction of the environment with Robinson. The most difficult part is to model how his new inventions affect the work he has to spend producing goods. 
 
-//TODO
-What we will do is use a simple model about the person and then try to prove that any other model of the person would have the same results.
-In order to allow other models to replace our model, we will have a specific api that all models would need to implement. Each model will have to decide on which choices the person takes.
-//
+We also need to model Robinson himself. That is a very difficult task as well.
+We need to model the choices that robisnson makes with regard to the labor he 
+puts and the products he creates. 
+Does he save goods for the winter? Does he make tools? 
+The problem here is that there is no theory we can use to simulate the human person's choices nor his change of habits due to external factors.
 
-We will assume that a person has specific wants that are common among all people like food, clothing etc. and whose value do not change very much. There are also wants that are specific to each person and whose value can change a lot or not depending on the person. Of course, we have to take the assumption that the wants do not change based on previous experiences.
+Instead of providing an accurate model, we will use a very simple model of the person. 
+As a result, we need to check if the results are affected by that simplification. 
+A very good way of finding that is to allow anyone to replace that simple mode with a more accurate one and see if there are any differences.
+That will require our abstract api to talk about the external behavior of the person and not his internal motivation.
+
+## Abstract model
+
+First we will define the abstract model of a person. 
+
+A person 
+
+* produces usefull things together with other people and with the use of tools.
+* invents new tools that help him in production.
+* consumes the products of his or others' labor.
+* stores products for future use.
+
+```javascript
+
+Person.prototype.wants_to_produce = function() {
+  throw new Error("Abstract method!");
+
+  //index is the index of the product he wants to produce in the products array.
+  var id = -1;
+  return id; 
+}
+
+Person.prototype.wants_to_invent = function() {
+  throw new Error("Abstract method!");
+  
+  //index is the index of the technology that he wants to research in the new knowledge array.
+  var id = -1;
+  return id;
+}
+
+Person.prototype.wants_to_consume = function() {
+  throw new Error("Abstract method!");
+
+  //The indexes of the consumer products that he wants ro consume.
+  var ids = [-1];
+  return ids;
+}
+
+Person.prototype.wants_to_store = function() {
+  throw new Error("Abstract method!");
+
+  //The indexes of the consumer products that he wants to store.
+  var ids = [-1];
+  return ids;
+}
+
+```
+
+Next we need to define the production and research process itself.
+
+```javscript
+
+Process.prototype.produce = function(tools,people) {
+  throw new Error("Abstract method!");
+
+  //Returns the volume of production. In case of research returns either a zero indicating the failure of research or the success of research.
+  var volume = 0;
+  return volume;
+}
+
+Process.prototype.output = function() {
+  throw new Error("Abstract method!");
+  
+  //return the type of output that this process produces. 
+  //Type has three options: 'knowledge' , 'tool' , 'consumer_product'
+  var output = { "type":"knowledge","id":-1 };
+  returns output;
+}
+
+```
+
+## A simple model for the human economic agent.
+
+Our main assumption for the modeling of the person is that he has specific wants that determine the choices he makes.
+We will assume that a person has wants that are common among all people like food, clothing etc. and whose value do not change very much. He will also have wants that are specific to each person and whose value can change a lot or not depending on the person. Of course, we have to take the assumption that the wants do not change based on previous experiences.
 In other words, the fact that you didn't eat food yesterday doesn't make you hungrier today. Whether that invalidates our results is an interesting question to find.
 
 Similarly, we will assume that the person cannot predict what he will want in the future. 
@@ -54,45 +131,94 @@ He can only project his wants of today into the future.
 Thus that person will not undertand that when he gets very old, 
 he would need to have someone to take care of him. 
 Of course, in Robinson's case, that is not possible.
-Nor will we simulate the physiology and the needs of a human body as it ages. The person will simply die after a randomly generated age.
+Nor will we simulate the physiology and the needs of a human body as it ages.
+ The person will simply die after a randomly generated age.
 
-These wants determine the choices of the person. We assume that a person has the ability to do that ordering effortlessly. One additional property that those wants is that if a product satisfies multiple wants then the choices are determined by adding the satisfaction of each and every want fulfilled by the product.
+These wants take a value from zero to 1. We assume that the person is 
+thus able to precisely determine how much he wants something and order 
+those wants in the process. Keep in mind that the wants are orthogonal 
+with each other. Any satisfaction of one want doesn't affect other wants.
+Given that consumer products can satisfy multiple wants, the choices of the person are determined with the addition of all the wants that will be fulfilled with a specific product.
 
 Please note that one product alone might not be able to fulfill a specific want 
-by itself. The percentage that it is fulfilled by a product is a different thing. 
-There can not be a fulfillment by a perecentage though. The person is either
-fulfilled or not fulfilled. It has to find all the necessary products so that his
-fulfilment is at least 100%.
+by itself. At the same time, one want is either fulfilled or not.
+The person has to find all the necessary products so that his
+fulfilment is at least 100%. This is done for simplicity's sake.
 
 * if \\[W_{a} < W_{b}\\] then R chooses b.
 * if \\[W_{a_{1}} + W_{a_{2}} > W_{b}\\] then R chooses a.
 
-In order to simulate this, we will use the Gaussian distribution.
-$$ f : R \rightarrow R $$
-$$f(x) = \frac{1}{\sigma\sqrt{2\pi}}e^{\frac{-(x-\mu)^{2}}{2\sigma^{2}}}$$
+As we have pointed, the distribution of wants that people are not homogenous.
+ On the contrary, basic needs are shared by most people. We will use the gaussian 
+distribution to simulate this, but we will provide an interface so that anyone can
+ change the distribution if the gaussian distribution is not accurate.
+
+#### The abstract distribution
 
 ```javascript
 
-function Guassian(sigma_, median_) {
+function Distribution {
+  if (this.constructor === Distribution) {
+    throw new Error("Can't instantiate abstract class!");
+  }
+}
+
+Distribution.prototype.at = function(x) {
+  throw new Error("Abstract Method!");
+
+  //This method returns the value of the distribution at x. 
+  var value = -1;
+  return value;
+}
+
+Distribution.prototype.max = function() {
+  throw new Error("Abstract Method!");
+
+  //This method returns the maximum value that the distribution has. 
+  var value = -1;
+  return value;
+}
+
+```
+
+#### The gauss distribution
+
+$$ G : R \rightarrow R $$
+$$G(x) = \frac{1}{\sigma\sqrt{2\pi}}e^{\frac{-(x-\mu)^{2}}{2\sigma^{2}}}$$
+
+```javascript
+
+function Gaussian(sigma_, median_) {
+  Distribution.apply(this);
+
   this.sigma = sigma_;
   this.median = median_;
   this.const = 1/(sigma * Math.sqrt(2 * Mapth.PI));
   this.exp_const = -1/(2 * sigma * sigma);
 
-  this.at = function(x) {
-    return this.const * Math.exp(this.exp_const * (x - this.median) * (x - this.median));
-  }
+}
 
-  this.max = this.at(0);
+Gaussian.prototype = Object.create(Distribution.prototype);
+Gaussian.prototype.constructor = Gaussian;
+
+Gaussian.prototype.at = function(x) {
+  return this.const * Math.exp(this.exp_const * (x - this.median) * (x - this.median));
+}
+
+Gaussian.prototype.max = function() {
+  this.at(this.median);
 }
 ```
-
-We will not generate each person with the same wants. We will randomly generate wants but the median will follow the guassian distribution. From a technical point of view, robinson will not know he wants something until he finds it.
+Going back to defining a simple model for the human economic agent,
+we will not generate each person with the same wants. We will randomly generate 
+wants but the median will follow the distribution. Since the number 
+of wants can be unlimited, it makes sense to have each person undertstand 
+that it wants something after he finds something that fulfills this want.
 
 ```javascript
 
-Person.prototype.new_want = function(id,gaussian) {
-  this.wants[id] = gaussian.at(id) * Math.random();
+Person.prototype.new_want = function(id, gaussian) {
+  this.wants[id] = gaussian.at(id) * 2 * Math.random();
 }
 
 ```
@@ -439,8 +565,9 @@ Research.prototype.new_knowledge_improvement = function(knowledges_array, t_impr
 
 
 Research.prototype.new_knowledge_specialization = function(knowledge) {
-  
+    
 }
+
 Research.prototype.possible_knowledge_generalization = function(knowledge) {
   
 }

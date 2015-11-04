@@ -1,8 +1,6 @@
-# simul
+# Economic Simulation
 
-For information about this tool, check the simulate.md file.
-
-There is a test page at http://xekoukou.github.io/simul
+CHeck http://xekoukou.github.io/economic_simulation
 
 ## Development
 
