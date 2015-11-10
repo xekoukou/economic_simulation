@@ -50,9 +50,7 @@ As a result, we need to check if the results are affected by that simplification
 A very good way of finding that is to allow anyone to replace that simple mode with a more accurate one and see if there are any differences.
 That will require our abstract api to talk about the external behavior of the person and not his internal motivation.
 
-## Abstract model
-
-First we will define the abstract model of a person. 
+## Abstract model of a person
 
 A person 
 
@@ -60,10 +58,11 @@ A person
 * invents new tools that help him in production.
 * consumes the products of his or others' labor.
 * stores products for future use.
+* changes his internal state and thus his future behaviour.
 
 ```javascript
 
-Person.prototype.wants_to_produce = function() {
+Abstract_Person.prototype.wants_to_produce = function() {
   throw new Error("Abstract method!");
 
   //index is the index of the product he wants to produce in the products array.
@@ -71,7 +70,7 @@ Person.prototype.wants_to_produce = function() {
   return id; 
 }
 
-Person.prototype.wants_to_invent = function() {
+Abstract_Person.prototype.wants_to_invent = function() {
   throw new Error("Abstract method!");
   
   //index is the index of the technology that he wants to research in the new knowledge array.
@@ -79,7 +78,7 @@ Person.prototype.wants_to_invent = function() {
   return id;
 }
 
-Person.prototype.wants_to_consume = function() {
+Abstract_Person.prototype.wants_to_consume = function() {
   throw new Error("Abstract method!");
 
   //The indexes of the consumer products that he wants ro consume.
@@ -87,7 +86,7 @@ Person.prototype.wants_to_consume = function() {
   return ids;
 }
 
-Person.prototype.wants_to_store = function() {
+Abstract_Person.prototype.wants_to_store = function() {
   throw new Error("Abstract method!");
 
   //The indexes of the consumer products that he wants to store.
@@ -95,27 +94,16 @@ Person.prototype.wants_to_store = function() {
   return ids;
 }
 
-```
-
-Next we need to define the production and research process itself.
-
-```javscript
-
-Process.prototype.produce = function(tools,people) {
+Abstract_Person.prototype.change_internal_state = function() {
   throw new Error("Abstract method!");
-
-  //Returns the volume of production. In case of research returns either a zero indicating the failure of research or the success of research.
-  var volume = 0;
-  return volume;
+ 
+  //Used per iteration to change the behavior of a person in the future.
 }
 
-Process.prototype.output = function() {
-  throw new Error("Abstract method!");
-  
-  //return the type of output that this process produces. 
-  //Type has three options: 'knowledge' , 'tool' , 'consumer_product'
-  var output = { "type":"knowledge","id":-1 };
-  returns output;
+function Abstract_Person() {
+  if (this.constructor === Abstract_Person) {
+    throw new Error("Can't instantiate abstract class!");
+  }
 }
 
 ```
@@ -128,7 +116,7 @@ In other words, the fact that you didn't eat food yesterday doesn't make you hun
 
 Similarly, we will assume that the person cannot predict what he will want in the future. 
 He can only project his wants of today into the future. 
-Thus that person will not undertand that when he gets very old, 
+Thus that person will not understand that when he gets very old, 
 he would need to have someone to take care of him. 
 Of course, in Robinson's case, that is not possible.
 Nor will we simulate the physiology and the needs of a human body as it ages.
@@ -149,37 +137,11 @@ fulfilment is at least 100%. This is done for simplicity's sake.
 * if \\[W_{a_{1}} + W_{a_{2}} > W_{b}\\] then R chooses a.
 
 As we have pointed, the distribution of wants that people are not homogenous.
- On the contrary, basic needs are shared by most people. We will use the gaussian 
-distribution to simulate this, but we will provide an interface so that anyone can
- change the distribution if the gaussian distribution is not accurate.
+ On the contrary, most people desire the fulfillment of basic needs and that desire is unelastic
+to change. At the same time, people can have a wide diversity in preferences 
+on other needs and their preferences can change a lot as tim e passes by.
+We will use the gaussian distribution to simulate this, but anyone can provide a more realistic agreggate consumer preferences distribution. 
 
-#### The abstract distribution
-
-```javascript
-
-function Distribution {
-  if (this.constructor === Distribution) {
-    throw new Error("Can't instantiate abstract class!");
-  }
-}
-
-Distribution.prototype.at = function(x) {
-  throw new Error("Abstract Method!");
-
-  //This method returns the value of the distribution at x. 
-  var value = -1;
-  return value;
-}
-
-Distribution.prototype.max = function() {
-  throw new Error("Abstract Method!");
-
-  //This method returns the maximum value that the distribution has. 
-  var value = -1;
-  return value;
-}
-
-```
 
 #### The gauss distribution
 
@@ -209,16 +171,20 @@ Gaussian.prototype.max = function() {
   this.at(this.median);
 }
 ```
+
 Going back to defining a simple model for the human economic agent,
 we will not generate each person with the same wants. We will randomly generate 
-wants but the median will follow the distribution. Since the number 
-of wants can be unlimited, it makes sense to have each person undertstand 
-that it wants something after he finds something that fulfills this want.
+wants but the median will follow the Gaussian distribution. 
+Since the number of wants can be unlimited, it makes sense to have 
+each person understand that it wants something after he finds something 
+that fulfills this want.
 
 ```javascript
 
-Person.prototype.new_want = function(id, gaussian) {
-  this.wants[id] = gaussian.at(id) * 2 * Math.random();
+Person.prototype.new_want = function(id, gaussian, magnitude) {
+    var initial_varrriance = magnitude * (2 * Math.random() - 1) * (gaussian.max - 
+(gaussian.at(id))/gaussian.max);
+  this.wants[id] = Math.max(0, gaussian.at(id) + initial_varriance);
 }
 
 ```
@@ -231,9 +197,10 @@ In other words, the necessary wants of most of the people will be much harder to
 
 ```javascript
 
-Person.prototype.change_wants = function(magnitude,gaussian) {
+Person.prototype.change_wants = function(gaussian, magnitude) {
   Object.keys(this.wants).forEach(function(id){
-    this.wants[id] = Math.max(0,this.wants[id] + magnitude * (2 * Math.random() - 1) * (guassian.max - (gaussian.at(id))/guassian.max));
+    this.wants[id] = Math.max(0,this.wants[id] + magnitude * (2 * Math.random() - 1) * 
+    (gaussian.max - (gaussian.at(id))/gaussian.max));
   });
 }
 
@@ -263,6 +230,8 @@ We wouldn't have wants if there weren't products that fulfilled those wants. If 
 A product thus fulfills specific wants. We specify the percentage of fulfillment that a product provides to a specific want. 1 or 100% means that it has been completely fulfilled.
 
 
+//TODO move these constants at the end of this article and have the user input them for the simulation.
+
 ```javascript
 var total_wants = 100000;
 var max_product_fulfilled_wants = 10;
@@ -280,15 +249,19 @@ Consumer_product.prototype.new_random_fulfilled_want = function(max_wants, magni
 
 function Consumer_product() {
   this.id;
-  this.unique_id;
   this.fulfilled_wants = {};
   this.production_cost;
+
+//list of the same product in all its steps of improvement.
+  this.forward_id = -1;
+  this.backward_id = -1;
 }
 ```
 
-A product certainly doesn't exist unless you pick it or create it. Thus there is a production process that might require tools to perform or not. How can we model production?
+A product certainly doesn't exist unless you pick it or create it. Thus we need 
+to model the production process.
 
-## Production process
+## Abstract model of a Production process
 
 There is one fundamental property of production. Humans create tools to help them in the production process.
  We will discuss the research process in the next section but we need 
@@ -297,12 +270,42 @@ Thus first of all, production exists that doesn't create human goods but tools.
  Secondly production itself has as inputs both tools and human labor/materials.
 
 Materials can be either raw ones extracted from nature or parts produced in other production plants.
-Thus another property is that the production process can be split into multiple ones in which only the last one assemples the final product.
+Thus another property is that the production process can be split into multiple ones in which the last one assemples the final product.
 
 The production process can be defined as a function that takes the above as input and generate a specific product at a specific volume.
 
-\\[P:TxLxM \rightarrow P\\]
-\\This function is informal. Fix it TODO.
+\\[Process:Tools \times Labor \times Materials \rightarrow Product \\]
+
+The abstact process interface that all production processes need to follow, follows.
+
+```javscript
+
+Abstract_Process.prototype.produce = function(tools,people) {
+  throw new Error("Abstract method!");
+
+  //Returns the volume of production. In case of research returns either a zero indicating the failure of research or the success of research.
+  var volume = 0;
+  return volume;
+}
+
+Abstract_Process.prototype.output = function() {
+  throw new Error("Abstract method!");
+  
+  //return the type of output that this process produces. 
+  //Type has three options: 'knowledge' , 'tool' , 'consumer_product'
+  var output = { "type":"knowledge","id":-1 };
+  returns output;
+}
+
+function Abstract_Process() {
+  if (this.constructor === Abstract_Process) {
+    throw new Error("Can't instantiate abstract class!");
+  }
+}
+
+```
+
+## A concrete production process
 
 The main problem for defining a general production process is that the sum of 
 its parts does not determine the  whole production process. The way that the process 
@@ -310,7 +313,10 @@ is performed cannot be deduced by the people that take part or the tools.
  We could add the organization structure as a factor of productivity.
  Since we cannot meaususe or specify in a general manner the interelations 
 of the workers and their effect on productivity we will have to do the
- above simplicication. In order to account for that simplification,
+ above simplicication. 
+
+//TODO Haven't done this yet.
+In order to account for that simplification,
  we will introduce a productivity multiplication factor that will 
 be generated with a gaussian distribution of small varriance for
  every group of workers on a specific production process.
@@ -320,15 +326,18 @@ Having introduced the above multiplier we can now model the production process a
 A tool can be used for either production or for research purposes. If a tool is used for research purposes then when the research succeeds, the same tool can be used for manufacturing purposes but it will have a low productivity multiplier.
 
 The tool identifies uniquely the production/research process that is using it.
+If a tool is upgraded, then the only thing that will change is the multiplier.
 
 ```javascript
 function Tool() {
   this.id;
-  this.unique_id;
   this.average_multiplier;
   this.process;
   this.discovered_by;
+//TODO is this necessary?
   this.production_cost;
+  this.forward_id = -1;
+  this.backward_id = -1;
 }
 ```
 
