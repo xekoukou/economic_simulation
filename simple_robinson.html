@@ -292,7 +292,7 @@ Abstract_Process.prototype.output = function() {
   throw new Error("Abstract method!");
   
   //return the type of output that this process produces. 
-  //Type has three options: 'knowledge' , 'tool' , 'consumer_product'
+  //Type has three options: 'knowledge', 'tool' , 'tool_part' , 'consumer_product', 'consumer_product_part'
   var output = { "type":"knowledge","id":-1 };
   returns output;
 }
@@ -331,10 +331,9 @@ If a tool is upgraded, then the only thing that will change is the multiplier.
 ```javascript
 function Tool() {
   this.id;
-  this.average_multiplier;
+  this.multiplier;
   this.process;
   this.discovered_by;
-//TODO is this necessary?
   this.production_cost;
   this.forward_id = -1;
   this.backward_id = -1;
@@ -345,17 +344,19 @@ Each person also needs to define its productivity with regard to a specific prod
 Here again we use a uniform distribution. In general when a person learns of a new task/production_process, it imediatelly knows both its preference to it as well as his productivity, thus our introduction of a helper function.
 
 ```javascript
-Person.prototype.new_task_productivity = function(task_id,number_of_different_positions) {
+Person.prototype.new_task_productivity = function(task_id, process_array) {
+  var process = process_array[task_id];
+  var number_of_positions = process.position_weights.length();
   var multi = [];
-  for( var i = 0; i < number_of_different_positions; i++) {
+  for( var i = 0; i < number_of_positions; i++) {
     multi.push(Math.random());
   }
   this.new_task_productivities[task_id] = multi;
 }
 
-Person.prototype.new_task = function(task_id,number_of_different_positions) {
+Person.prototype.new_task = function(task_id,process_array) {
   this.new_task_preference(task_id);
-  this.new_task_productivity(task_id,number_of_different_positions);
+  this.new_task_productivity(task_id, process_array);
 }
 ```
 
@@ -372,20 +373,19 @@ Process.prototype.output(workers,tool) {
       result += weight * workers[index][i].task_productivities[self.id][index];
     }
   });
-  return this.number_of_workers * tool.average_multiplier * (result/self.weights_sum);
+  return tool.multiplier * result;
 }
 
 function Process() {
-  this.unique_id;
-  this.number_of_workers;
+  this.id;
   this.position_weights = [];
   this.number_of_workers_in_position = [];
   this.weights_sum;
   this.type;
-//type can be product consumer_product_part, consumer_product, tool_part, tool, knowledge_part, knowledge.
+//type can be product consumer_product_part, consumer_product, tool_part, tool, knowledge.
   this.product_id;
-
- //Here we need to generate the above values. we need to look at research to do so. 
+//Every tool starts as a research tool for another technology. When that other technology is found, the tool becomes a production tool for the product of that technology.
+  this.required_knowledge = -1;
 
 }
 ```
@@ -420,39 +420,86 @@ The second property of research is that the more knowledge one receives on a cer
 the more difficult it is to learn new things. This will allow us to provide a formula that 
 determines the probability that a new research will succeed or not.
 
+
 //Todo should I remove that?
 At the same time, it is not only the previous knowledge the only factor that determine research. Research tools are also required. Tools are randomly generated but the probability of creating a new tool is relatively very low compared to improving an existing tool. In other words, tool creation for research is determined by the same rules like any other product.
 
 Let us put those ideas into a more formal language.
 
-* A unit of knowledge \\(K\\) depends on a set of previous knowledge units \\(dep_{K}=\\{i=1..n|K_{i}\\}\\).
-We say that \\(K\\) depends on \\(K_{i}\\) for its research and we write \\[K_{i} \xrightarrow{dep} K \\].
+* A unit of knowledge \\(K\\) depends on a previous knowledge unit \\(K_{d}\\).
+We say that \\(K\\) depends on \\(K_{d}\\) for its research and we write \\[K_{d} \xrightarrow{dep} K \\].
 * We say that \\(K_{a}\\) is an ancestor of \\(K\\) if there is a directed path from \\(K_{a}\\) to \\(K\\) in the graph of Knowledge dependencies.
 
-Research is performed in 2 ways.
+Research is performed in 3 ways.
 
-1. It is performed either for the improvement or specialization of a specific knowledge unit.
+1. It is performed either for the improvement of a specific knowledge unit.
 
-In this case, the only dependency is the specific knowledge unit.
-
-* We say that the new knowledge is a specialization of the previous knowledge and we write \\[K_{c} \xrightarrow{spec} K  \\].
 * We say that the new knowledge is an improvement of the previous knowledge and we write \\[K_{i} \xrightarrow{impr} K  \\].
 
-2. Research is performed on a number of dinstict fields so as to create a new field.
+2. It is performed either for the improvement of a specific knowledge unit.
 
-* We say that the new knowledge is derived from multiple knowledges and is a new dinstinct field, we write \\[K_{i} \xrightarrow{sum} K  \\].
+* We say that the new knowledge is a specialization of the previous knowledge and we write \\[K_{c} \xrightarrow{spec} K  \\].
 
-# Research Success probability based on graph of dependencies.
+3. It is performed on a new Knowledge field and thus it doesnt have any ancestors.
 
-For the second type of research, it is impossible to know whether a number of knowledges can be used together to produce a new field without knowing the content of the knowledges. In order to simulate this possibility we will randomize that possibility. Whenever a new knowledge becomes known, we will generate the sets that it can be used with.
+Of course, that new knowledege might require tools so as to be researched. Those tools require previous knowledge to be known so as to be built.
 
-But what does it mean to use all these knowledges/technologies to create new products/tools. 
-It means that we specialize on all of them in such a way that all of them create the final product.
+4. It is performed so as to generalize a set of knowledges. The new knowledge then becomes the ancestor of those knowledges.
 
-Thus the probability of success can be no other than the multiplication of the atomic specialization probabbilities.
+### Results of research
 
-What remains is to specify the probability of specialization/improvement  
-of a specific technology. 
+The results of research depend on the type of research performed.
+
+* Improvement: 
+  * The new products and tools that are made possible contain the same characteristics that the previous knowledge allowed, only improved.
+  *  The cost of production might increase.
+* research tools:
+    * If they remained the same, then the production process of those products remains the same. Their cost of production though might increase.
+    * If some of them change, then the new tools used will also take part in the production of the relevant parts of the product.
+* Specialization or new field Of Knowledge:
+  * The new products and tools have new characteristics that are picked randomly.
+  * As always, the tools of research are used to produce them.
+* Generalization of a set of Knowledges:
+  * The products and tools of this research are used to improve the products or the knowledge itself contained in the set.
+
+Please note that because of the randomness of the characteristics of the tools due to specialization of knowledge, new tools could potentially be used to improve a previous more general knowledge.
+
+### Research Success probability based on the graph of dependencies.
+
+The next thing we need to do is to provide a correct probability estimate on the success of a specific research. We need to provide an accurate enough simulation of how difficult a specific research is without knowing the contents of the research.
+
+There are 2 things that need simulation.
+
+1. Generating new **research paths**. Each new knowledge that is found introduces new questions 
+and thus new research paths to follow. Researches view those research paths and decide whether
+ to follow them or not. Those research paths might require the use of tools from different fields 
+than the ones used before. We need to simulate that intermixing as well.
+2. Generating the probability of each research path succeeding.
+
+#### Generating the research paths.
+
+//TODO Fix the remaining model of research.
+
+Each knowledge can always be improved, so that doesn't need to generated. What needs to be generated is the specializations of this knowledge.
+
+Let us point that there are 3 varriables in generating the research paths and we have made some assumptions regarding them.
+
+* The research paths that build tools that can improve previous knowledge(circular_specializations) are a fixed percentage with regard to the total number of paths, most possibly small.
+* The number of parts of a product increases as we specialize our knowledge because each specialization has the ability to create a very small number of things.
+* The number of new research paths decreases as we specialize. (?)
+
+In this generation of research paths, we make 2 assumptions.
+
+1. The percentage of 
+
+```javascript
+Knowledge.prototype.new_random_specializations =  function(number_of_new_specializations, knowledge_array, percentage_circular_specializations, perencetage_number_of_parts) {
+
+} 
+```
+
+
+
 As we have said previously, we need to decrease the probability of new research 
 if the research community has already found knowledge in a specific sector.
 Thus the probability of improvement upon a specific sector reduces.
@@ -468,6 +515,10 @@ When we improve the knowledge of a specific sector, the direct dependant technol
 On the specialization probability:
 
 When we perform specialization two things happen. First we reduce the subject of inquiry to a small field. That decreases the work one needs to do for research. Secondly, it reduces the possible technological outcomes of the research. We cannot know the results of the research but we do know that the possible outcomes are fewer. Thus the probability of finding a usefull product reduces, thus one needs to do more research to find a usefull product.
+
+Thus whether specialization improves the research success or not is not possible to determine beforehand. It must be randomized with a median toward remaining equal.
+
+The specialization though still inherits the difficulty of the parental technology.
 
 On generalization:
 
@@ -506,7 +557,9 @@ Tool.prototype.new_improved_tool = function(knowledge_ids,tools_array, t_impr_ma
 
 function Knowledge() {
   this.id;
-  this.unique_id;
+  this.improvement_level = 0;
+  this.forward_id;
+  this.backward_id;
 
   this.dependencies={};
 //The sets of tools is used to specify the tools that can be used to research or improve this knowledge. Any of those tools would do.
@@ -515,7 +568,6 @@ function Knowledge() {
   this.new_tools = {};
 //For the new products and new tools, the research tools will be used to produce them at first before much better procedures are found.
   this.new_consumer_products = {};
-  this.improvement_level = 0;
   this.descendants = {};
 //Here we also have the probabilities of merges of different sectors into a new field.
   this.possible_new_descendands = {};

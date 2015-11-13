@@ -141,3 +141,11 @@ Should we allow the production cost to increase in an improvement?
 The productivity of wworkers on improved tools should be very similar to the one with the previous tool. If there are fewer positions in the new tool, those positions are no longer needed in the new tool. Thus those workers will not be able to use their good productivity in the new tool. 
 
 In reality , improved tools might require different positions than the ones from the previous tool. How should we simulate this?
+
+--------------------------------------------------------
+
+Should we allow knowledge to be researched from multiple sets of tools?
+
+I think it is unavoidable. The same product can be build with different technologies.
+
+At the same time, when we generalize a set of knowledges, then the tools that are created by this generalized knowledged can be used to research previous knowledge that was researched with other tools or not tools at all.
